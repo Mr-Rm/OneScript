@@ -38,7 +38,7 @@ namespace ScriptEngine.Compiler
 
         private int GetLineBound(int lineNumber)
         {
-            return _lineBounds[lineNumber];
+            return lineNumber>0 ? _lineBounds[lineNumber]:0;
         }
 
     }
