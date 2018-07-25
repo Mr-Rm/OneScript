@@ -240,9 +240,7 @@ namespace ScriptEngine.Compiler
                         throw;
                     }
 
-                    var cmd = _module.Code[item.commandIndex];
-                    cmd.Argument = GetMethodRefNumber(ref methN);
-                    _module.Code[item.commandIndex] = cmd;
+                    CorrectCommandArgument(item.commandIndex, GetMethodRefNumber(ref methN));
                 }
             }
         }
@@ -257,8 +255,8 @@ namespace ScriptEngine.Compiler
 
         private int EmitLineNum( int linenum, CodeGenerationFlags emitConditions = CodeGenerationFlags.Always)
         {
-            return _module.Code.Count;
-            //return AddCommand(OperationCode.LineNum, linenum, emitConditions);
+            //return _module.Code.Count;
+            return AddCommand(OperationCode.LineNum, linenum, emitConditions);
         }
 
         private void DispatchModuleBuild()
@@ -947,11 +945,12 @@ namespace ScriptEngine.Compiler
             }
 
             AddCommand(OperationCode.Jmp, loopBegin);
-            var cmd = _module.Code[condition];
-            cmd.Argument = AddCommand(OperationCode.StopIterator, 0);
-            _module.Code[condition] = cmd;
 
-            CorrectBreakStatements(_nestedLoops.Pop(), cmd.Argument);
+            int stopIndex = AddCommand(OperationCode.StopIterator, 0);
+
+            CorrectCommandArgument(condition, stopIndex);
+
+            CorrectBreakStatements(_nestedLoops.Pop(), stopIndex);
             NextToken();
         }
 
@@ -970,32 +969,30 @@ namespace ScriptEngine.Compiler
             BuildExpression(Token.Loop);
             AddCommand(OperationCode.MakeRawValue, 0);
             AddCommand(OperationCode.PushTmp, 0);
-            var lastIdx = _module.Code.Count;
-            int indexLoopBegin = -1;
 
-            // TODO: костыль
+            int indexLoopBegin = -1;
+            int indexJmp;
+
             if (_lastExtractedLexem.Token == Token.Loop)
             {
-                AddCommand(OperationCode.Jmp, lastIdx + 5);
+                indexJmp=AddCommand(OperationCode.Jmp, -1);
                 indexLoopBegin = EmitLineNum( _lastExtractedLexem.LineNumber);
             }
             else
             {
-                AddCommand(OperationCode.Jmp, lastIdx + 4);
+                indexJmp=AddCommand(OperationCode.Jmp, -1);
             }
 
-            {
-                // increment
-                var indexLoopBeginNew = BuildPushVariable(counter);
-                if (indexLoopBegin == -1)
-                    indexLoopBegin = indexLoopBeginNew;
-            }
+            // increment
+            var indexLoopBeginNew = BuildPushVariable(counter);
+            if (indexLoopBegin == -1)
+                indexLoopBegin = indexLoopBeginNew;
 
             AddCommand(OperationCode.Inc, 0);
             BuildLoadVariable(counter);
 
-            BuildPushVariable(counter);
-            var conditionIndex = AddCommand(OperationCode.JmpCounter, -1);
+            int indexCounter= BuildPushVariable(counter);
+            var indexCondition = AddCommand(OperationCode.JmpCounter, -1);
             var loopRecord = NestedLoopInfo.New();
             loopRecord.startPoint = indexLoopBegin;
             _nestedLoops.Push(loopRecord);
@@ -1015,10 +1012,8 @@ namespace ScriptEngine.Compiler
             AddCommand(OperationCode.Jmp, indexLoopBegin);
             var indexLoopEnd = AddCommand(OperationCode.PopTmp, 1);
 
-            var cmd = _module.Code[conditionIndex];
-            cmd.Argument = indexLoopEnd;
-            _module.Code[conditionIndex] = cmd;
-
+            CorrectCommandArgument(indexJmp, indexCounter);
+            CorrectCommandArgument(indexCondition, indexLoopEnd);
             CorrectBreakStatements(_nestedLoops.Pop(), indexLoopEnd);
             NextToken();
             
