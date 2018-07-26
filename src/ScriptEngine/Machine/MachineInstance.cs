@@ -652,7 +652,7 @@ namespace ScriptEngine.Machine
             NextInstruction();
         }
 
-        private void PushLoc(int arg)
+         private void PushLoc(int arg)
         {
             _operationStack.Push(_currentFrame.Locals[arg]);
             NextInstruction();
@@ -1027,10 +1027,6 @@ namespace ScriptEngine.Machine
         private void ResolveProp(int arg)
         {
             var objIValue = _operationStack.Pop();
-            if (objIValue.DataType != DataType.Object)
-            {
-                throw RuntimeException.ValueIsNotObjectException();
-            }
 
             var context = objIValue.AsObject();
             var propName = _module.Constants[arg].AsString();
