@@ -161,7 +161,8 @@ namespace ScriptEngine.Machine.Contexts
 
     public class ContextPropertyMapper<TInstance>
     {
-        private List<PropertyTarget<TInstance>> _properties;
+        //private List<PropertyTarget<TInstance>> _properties;
+        private PropertyTarget<TInstance>[] _properties;
 
         public void Init()
         {
@@ -177,14 +178,24 @@ namespace ScriptEngine.Machine.Contexts
         private void FindProperties()
         {
             _properties = typeof(TInstance).GetProperties()
-                .Where(x => x.GetCustomAttributes(typeof(ContextPropertyAttribute), false).Any())
-                .Select(x => new PropertyTarget<TInstance>(x)).ToList();
+                .Where(x => x.GetCustomAttribute(typeof(ContextPropertyAttribute), false)!=null)
+                .Select(x => new PropertyTarget<TInstance>(x))
+                .ToArray(); //
+            //foreach (var prop in typeof(TInstance).GetProperties())
+            //{
+            //    if (null != prop.GetCustomAttribute(typeof(ContextPropertyAttribute), false))
+            //    {
+            //        //_properties.Add( new PropertyTarget<TInstance>(prop));
+            //    }
+            //}
         }
 
         public int FindProperty(string name)
         {
             Init();
-            var idx = _properties.FindIndex(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
+            //var idx = _properties.FindIndex(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
+            //    || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
+            var idx = Array.FindIndex(_properties, x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
                 || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
             if (idx < 0)
                 throw RuntimeException.PropNotFoundException(name);
@@ -203,7 +214,8 @@ namespace ScriptEngine.Machine.Contexts
             get
             {
                 Init();
-                return _properties.Count;
+                //return _properties.Count;
+                return _properties.Length;
             }
         }
 
