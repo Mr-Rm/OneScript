@@ -26,8 +26,8 @@ namespace ScriptEngine.Machine.Contexts
             if (!string.IsNullOrEmpty(alias) && !Utils.IsValidIdentifier(alias))
                 throw new ArgumentException("Alias must be a valid identifier");
 
-            _name = name;
-            _alias = alias;
+            _name = name.ToLowerInvariant();
+            _alias = alias.ToLowerInvariant();
             CanRead = true;
             CanWrite = true;
         }
@@ -162,8 +162,7 @@ namespace ScriptEngine.Machine.Contexts
     public class ContextPropertyMapper<TInstance>
     {
         private List<PropertyTarget<TInstance>> _properties;
-        //private PropertyTarget<TInstance>[] _properties;
-
+ 
         public void Init()
         {
             if (_properties != null) return;
@@ -178,10 +177,9 @@ namespace ScriptEngine.Machine.Contexts
         private void FindProperties()
         {
             _properties = typeof(TInstance).GetProperties()
-                //.Where(x => x.GetCustomAttributes(typeof(ContextPropertyAttribute), false).Any())
                 .Where(x => x.GetCustomAttribute(typeof(ContextPropertyAttribute), false) != null)
                 .Select(x => new PropertyTarget<TInstance>(x))
-                .ToList(); //
+                .ToList();
             //_properties = new List<PropertyTarget<TInstance>>();
             //foreach (var prop in typeof(TInstance).GetProperties())
             //{
@@ -195,11 +193,10 @@ namespace ScriptEngine.Machine.Contexts
         public int FindProperty(string name)
         {
             Init();
-            var idx = _properties.FindIndex(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
-                || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
-            //var idx = Array.FindIndex(_properties, x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
+            //var idx = _properties.FindIndex(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
             //    || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
-            if (idx < 0)
+            var idx = _properties.FindIndex(x => name == x.Name || name == x.Alias );
+             if (idx < 0)
                 throw RuntimeException.PropNotFoundException(name);
 
             return idx;
@@ -217,7 +214,6 @@ namespace ScriptEngine.Machine.Contexts
             {
                 Init();
                 return _properties.Count;
-                //return _properties.Length;
             }
         }
 
