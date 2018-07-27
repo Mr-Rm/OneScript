@@ -26,8 +26,8 @@ namespace ScriptEngine.Machine.Contexts
             if (!string.IsNullOrEmpty(alias) && !Utils.IsValidIdentifier(alias))
                 throw new ArgumentException("Alias must be a valid identifier");
 
-            _name = name;
-            _alias = alias;
+            _name = name.ToLowerInvariant();
+            _alias = alias.ToLowerInvariant();
             CanRead = true;
             CanWrite = true;
         }
@@ -56,7 +56,7 @@ namespace ScriptEngine.Machine.Contexts
 
         public PropertyTarget(PropertyInfo propInfo)
         {
-            var attrib = (ContextPropertyAttribute)propInfo.GetCustomAttributes(typeof(ContextPropertyAttribute), false)[0];
+            var attrib = (ContextPropertyAttribute)propInfo.GetCustomAttribute(typeof(ContextPropertyAttribute), false);
             _name = attrib.GetName();
             _alias = attrib.GetAlias();
             if (string.IsNullOrEmpty(_alias))
@@ -161,9 +161,8 @@ namespace ScriptEngine.Machine.Contexts
 
     public class ContextPropertyMapper<TInstance>
     {
-        //private List<PropertyTarget<TInstance>> _properties;
-        private PropertyTarget<TInstance>[] _properties;
-
+        private List<PropertyTarget<TInstance>> _properties;
+ 
         public void Init()
         {
             if (_properties != null) return;
@@ -178,14 +177,15 @@ namespace ScriptEngine.Machine.Contexts
         private void FindProperties()
         {
             _properties = typeof(TInstance).GetProperties()
-                .Where(x => x.GetCustomAttribute(typeof(ContextPropertyAttribute), false)!=null)
+                .Where(x => x.GetCustomAttribute(typeof(ContextPropertyAttribute), false) != null)
                 .Select(x => new PropertyTarget<TInstance>(x))
-                .ToArray(); //
+                .ToList();
+            //_properties = new List<PropertyTarget<TInstance>>();
             //foreach (var prop in typeof(TInstance).GetProperties())
             //{
             //    if (null != prop.GetCustomAttribute(typeof(ContextPropertyAttribute), false))
             //    {
-            //        //_properties.Add( new PropertyTarget<TInstance>(prop));
+            //        _properties.Add(new PropertyTarget<TInstance>(prop));
             //    }
             //}
         }
@@ -195,9 +195,8 @@ namespace ScriptEngine.Machine.Contexts
             Init();
             //var idx = _properties.FindIndex(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
             //    || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
-            var idx = Array.FindIndex(_properties, x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
-                || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
-            if (idx < 0)
+            var idx = _properties.FindIndex(x => name == x.Name || name == x.Alias );
+             if (idx < 0)
                 throw RuntimeException.PropNotFoundException(name);
 
             return idx;
@@ -214,8 +213,7 @@ namespace ScriptEngine.Machine.Contexts
             get
             {
                 Init();
-                //return _properties.Count;
-                return _properties.Length;
+                return _properties.Count;
             }
         }
 

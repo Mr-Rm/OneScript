@@ -190,7 +190,7 @@ namespace ScriptEngine.Machine.Reflection
         public ClassBuilder<T> ExportScriptConstructors()
         {
             var statics = typeof(T).GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
-                                   .Where(x => x.GetCustomAttributes(false).Any(y => y is ScriptConstructorAttribute));
+                                   .Where(x => x.GetCustomAttributes(typeof(ScriptConstructorAttribute), false).Any());
 
             foreach (var staticConstructor in statics)
             {

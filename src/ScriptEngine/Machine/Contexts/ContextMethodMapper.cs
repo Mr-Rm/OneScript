@@ -27,8 +27,8 @@ namespace ScriptEngine.Machine.Contexts
             if(!string.IsNullOrEmpty(alias) && !Utils.IsValidIdentifier(alias))
                 throw new ArgumentException("Alias must be a valid identifier");
 
-            _name = name;
-            _alias = alias;
+            _name = name.ToLowerInvariant();
+            _alias = alias?.ToLowerInvariant();
         }
 
         public string GetName()
@@ -49,7 +49,7 @@ namespace ScriptEngine.Machine.Contexts
             }
             if (!IsDeprecated)
             {
-                return nativeMethodName;
+                return nativeMethodName.ToLowerInvariant();
             }
             return null;
         }
@@ -108,15 +108,16 @@ namespace ScriptEngine.Machine.Contexts
         public int FindMethod(string name)
         {
             Init();
-
+            
             // поскольку этот метод вызывается довольно часто, то тут
             // возможна некоторая просадка по производительности 
             // за счет сравнения IgnoreCase вместо обычного "числового" сравнения
             // Надо будет понаблюдать или вообще замерить
             //
-            var idx = _methodPtrs.FindIndex(x => 
-                String.Compare(x.MethodInfo.Name, name, StringComparison.OrdinalIgnoreCase) == 0 
-                || String.Compare(x.MethodInfo.Alias, name, StringComparison.OrdinalIgnoreCase) == 0 );
+            //var idx = _methodPtrs.FindIndex(x => 
+            //    String.Compare(x.MethodInfo.Name, name, StringComparison.OrdinalIgnoreCase) == 0 
+            //    || String.Compare(x.MethodInfo.Alias, name, StringComparison.OrdinalIgnoreCase) == 0 );
+            var idx = _methodPtrs.FindIndex(x => name == x.MethodInfo.Name || name == x.MethodInfo.Alias );
             if (idx < 0)
             {
                 throw RuntimeException.MethodNotFoundException(name);
@@ -175,10 +176,11 @@ namespace ScriptEngine.Machine.Contexts
                 var argNum = parameters.Length;
 
                 var paramDefs = new ParameterDefinition[argNum];
+
                 for (int i = 0; i < argNum; i++)
                 {
                     var pd = new ParameterDefinition();
-                    if (parameters[i].GetCustomAttributes(typeof(ByRefAttribute), false).Length != 0)
+                    if (parameters[i].GetCustomAttribute(typeof(ByRefAttribute), false) != null)
                     {
                         if (parameters[i].ParameterType != typeof(IVariable))
                         {
@@ -198,7 +200,6 @@ namespace ScriptEngine.Machine.Contexts
                     }
 
                     paramDefs[i] = pd;
-
                 }
 
                 var scriptMethInfo = new ScriptEngine.Machine.MethodInfo();
