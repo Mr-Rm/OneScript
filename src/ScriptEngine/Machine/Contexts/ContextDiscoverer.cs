@@ -72,10 +72,13 @@ namespace ScriptEngine.Machine.Contexts
 
         private static void RegisterSystemType(Type stdClass)
         {
-            var attribData = stdClass.GetCustomAttributes(typeof(ContextClassAttribute), false);
-            System.Diagnostics.Trace.Assert(attribData.Length > 0, "Class is not marked as context");
+            //var attribData = stdClass.GetCustomAttributes(typeof(ContextClassAttribute), false);
+            //System.Diagnostics.Trace.Assert(attribData.Length > 0, "Class is not marked as context");
 
-            var attr = (ContextClassAttribute)attribData[0];
+            //var attr = (ContextClassAttribute)attribData[0];
+            var attr= (ContextClassAttribute)stdClass.GetCustomAttribute(typeof(ContextClassAttribute), false);
+            System.Diagnostics.Trace.Assert(attr!=null, "Class is not marked as context");
+
             var newType = TypeManager.RegisterType(attr.GetName(), stdClass);
             string alias = attr.GetAlias();
             if(!String.IsNullOrEmpty(alias))
@@ -90,7 +93,7 @@ namespace ScriptEngine.Machine.Contexts
 
             var instance = (IValue)method.Invoke(null, null);
             GlobalsManager.RegisterInstance(instance);
-            var enumMetadata = (SystemEnumAttribute)enumType.GetCustomAttributes(typeof(SystemEnumAttribute), false)[0];
+            var enumMetadata = (SystemEnumAttribute)enumType.GetCustomAttribute(typeof(SystemEnumAttribute), false);
             environment.InjectGlobalProperty(instance, enumMetadata.GetName(), true);
             if(enumMetadata.GetAlias() != String.Empty)
                 environment.InjectGlobalProperty(instance, enumMetadata.GetAlias(), true);
@@ -98,7 +101,7 @@ namespace ScriptEngine.Machine.Contexts
 
         private static void RegisterSimpleEnum(Type enumType, RuntimeEnvironment environment)
         {
-            var enumTypeAttribute = (EnumerationTypeAttribute)enumType.GetCustomAttributes (typeof (EnumerationTypeAttribute), false)[0];
+            var enumTypeAttribute = (EnumerationTypeAttribute)enumType.GetCustomAttribute(typeof (EnumerationTypeAttribute), false);
 
             var type = TypeManager.RegisterType ("Перечисление" + enumTypeAttribute.Name, typeof (EnumerationContext));
             if (enumTypeAttribute.Alias != null)
@@ -142,7 +145,7 @@ namespace ScriptEngine.Machine.Contexts
 
         private static void RegisterGlobalContext(Type contextType, RuntimeEnvironment environment)
         {
-            var attribData = (GlobalContextAttribute)contextType.GetCustomAttributes(typeof(GlobalContextAttribute), false)[0];
+            var attribData = (GlobalContextAttribute)contextType.GetCustomAttribute(typeof(GlobalContextAttribute), false);
             if (attribData.ManualRegistration)
                 return;
 

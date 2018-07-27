@@ -196,8 +196,11 @@ namespace ScriptEngine.HostedScript.Library
                 throw RuntimeException.InvalidArgumentValue("Тип не может быть отражен.");
             }
 
-            var attrs = clrType.GetCustomAttributes(typeof(ContextClassAttribute), false).ToArray();
-            if (attrs.Length == 0)
+            //var attrs = clrType.GetCustomAttributes(typeof(ContextClassAttribute), false).ToArray();
+            //if (attrs.Length == 0)
+            //    throw RuntimeException.InvalidArgumentValue("Тип не может быть отражен.");
+            var attrs = clrType.GetCustomAttribute(typeof(ContextClassAttribute), false);
+            if (attrs == null)
                 throw RuntimeException.InvalidArgumentValue("Тип не может быть отражен.");
 
             return clrType;

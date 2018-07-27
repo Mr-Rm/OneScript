@@ -56,7 +56,7 @@ namespace ScriptEngine.Machine.Contexts
 
         public PropertyTarget(PropertyInfo propInfo)
         {
-            var attrib = (ContextPropertyAttribute)propInfo.GetCustomAttributes(typeof(ContextPropertyAttribute), false)[0];
+            var attrib = (ContextPropertyAttribute)propInfo.GetCustomAttribute(typeof(ContextPropertyAttribute), false);
             _name = attrib.GetName();
             _alias = attrib.GetAlias();
             if (string.IsNullOrEmpty(_alias))
@@ -161,8 +161,8 @@ namespace ScriptEngine.Machine.Contexts
 
     public class ContextPropertyMapper<TInstance>
     {
-        //private List<PropertyTarget<TInstance>> _properties;
-        private PropertyTarget<TInstance>[] _properties;
+        private List<PropertyTarget<TInstance>> _properties;
+        //private PropertyTarget<TInstance>[] _properties;
 
         public void Init()
         {
@@ -178,18 +178,27 @@ namespace ScriptEngine.Machine.Contexts
         private void FindProperties()
         {
             _properties = typeof(TInstance).GetProperties()
-                .Where(x => x.GetCustomAttributes(typeof(ContextPropertyAttribute), false).Any())
+                //.Where(x => x.GetCustomAttributes(typeof(ContextPropertyAttribute), false).Any())
+                .Where(x => x.GetCustomAttribute(typeof(ContextPropertyAttribute), false) != null)
                 .Select(x => new PropertyTarget<TInstance>(x))
-                .ToArray(); //
+                .ToList(); //
+            //_properties = new List<PropertyTarget<TInstance>>();
+            //foreach (var prop in typeof(TInstance).GetProperties())
+            //{
+            //    if (null != prop.GetCustomAttribute(typeof(ContextPropertyAttribute), false))
+            //    {
+            //        _properties.Add(new PropertyTarget<TInstance>(prop));
+            //    }
+            //}
         }
 
         public int FindProperty(string name)
         {
             Init();
-            //var idx = _properties.FindIndex(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
-            //    || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
-            var idx = Array.FindIndex(_properties, x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
+            var idx = _properties.FindIndex(x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
                 || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
+            //var idx = Array.FindIndex(_properties, x => String.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase) 
+            //    || String.Equals(x.Alias, name, StringComparison.OrdinalIgnoreCase));
             if (idx < 0)
                 throw RuntimeException.PropNotFoundException(name);
 
@@ -207,8 +216,8 @@ namespace ScriptEngine.Machine.Contexts
             get
             {
                 Init();
-                //return _properties.Count;
-                return _properties.Length;
+                return _properties.Count;
+                //return _properties.Length;
             }
         }
 

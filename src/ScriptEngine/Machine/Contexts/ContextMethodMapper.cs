@@ -175,10 +175,11 @@ namespace ScriptEngine.Machine.Contexts
                 var argNum = parameters.Length;
 
                 var paramDefs = new ParameterDefinition[argNum];
+
                 for (int i = 0; i < argNum; i++)
                 {
                     var pd = new ParameterDefinition();
-                    if (parameters[i].GetCustomAttributes(typeof(ByRefAttribute), false).Length != 0)
+                    if (parameters[i].GetCustomAttribute(typeof(ByRefAttribute), false) != null)
                     {
                         if (parameters[i].ParameterType != typeof(IVariable))
                         {
@@ -198,7 +199,6 @@ namespace ScriptEngine.Machine.Contexts
                     }
 
                     paramDefs[i] = pd;
-
                 }
 
                 var scriptMethInfo = new ScriptEngine.Machine.MethodInfo();
