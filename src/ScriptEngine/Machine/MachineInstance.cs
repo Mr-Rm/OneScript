@@ -1252,10 +1252,12 @@ namespace ScriptEngine.Machine
             var clrType = TypeManager.GetFactoryFor(typeName);
 
             var ctors = clrType.GetMethods(System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public)
-                .Where(x => x.GetCustomAttributes(typeof(ScriptConstructorAttribute),false).Any())
+                //.Where(x => x.GetCustomAttributes(typeof(ScriptConstructorAttribute),false).Any())
+                .Where(x => Attribute.GetCustomAttribute(x,typeof(ScriptConstructorAttribute),false)!=null)
                 .Select(x => new 
                     {   CtorInfo = x,
-                        Parametrized = ((ScriptConstructorAttribute)x.GetCustomAttributes(typeof(ScriptConstructorAttribute), false)[0]).ParametrizeWithClassName 
+                        //Parametrized = ((ScriptConstructorAttribute)x.GetCustomAttributes(typeof(ScriptConstructorAttribute), false)[0]).ParametrizeWithClassName 
+                        Parametrized = ((ScriptConstructorAttribute)Attribute.GetCustomAttribute(x,typeof(ScriptConstructorAttribute), false)).ParametrizeWithClassName 
                     });
 
             foreach (var ctor in ctors)
