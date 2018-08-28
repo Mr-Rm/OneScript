@@ -1275,7 +1275,7 @@ namespace ScriptEngine.Compiler
                 PushMethodArgumentsBeforeCall();
                 var cDef = new ConstDefinition();
                 cDef.Type = DataType.String;
-                cDef.Presentation = ident.ToLowerInvariant();
+                cDef.Presentation = ident;
                 int lastIdentifierConst = GetConstNumber(ref cDef);
 
                 if (IsContinuationToken(ref _lastExtractedLexem))
@@ -1588,7 +1588,7 @@ namespace ScriptEngine.Compiler
                             var args = BuildArgumentList();
                             var cDef = new ConstDefinition();
                             cDef.Type = DataType.String;
-                            cDef.Presentation = identifier.ToLowerInvariant();
+                            cDef.Presentation = identifier;
                             int lastIdentifierConst = GetConstNumber(ref cDef);
                             AddCommand(OperationCode.ArgNum, args.Length);
                             AddCommand(OperationCode.ResolveMethodFunc, lastIdentifierConst);
@@ -1634,7 +1634,7 @@ namespace ScriptEngine.Compiler
         {
             var cDef = new ConstDefinition();
             cDef.Type = DataType.String;
-            cDef.Presentation = identifier.ToLowerInvariant();
+            cDef.Presentation = identifier;
             var identifierConstIndex = GetConstNumber(ref cDef);
             AddCommand(OperationCode.ResolveProp, identifierConstIndex);
         }
