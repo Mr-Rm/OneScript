@@ -1078,55 +1078,61 @@ namespace ScriptEngine.Machine
             }
 
             var objIValue = _operationStack.Pop();
-            if (objIValue.DataType != DataType.Object)
-            {
-                throw RuntimeException.ValueIsNotObjectException();
-            }
+            //if (objIValue.DataType != DataType.Object)
+            //{
+            //    throw RuntimeException.ValueIsNotObjectException();
+            //}
 
-            context = objIValue.AsObject();
+            context = objIValue.AsObject(); // throws ValueIsNotObjectException
             var methodName = _module.Constants[arg].AsString();
             methodId = context.FindMethod(methodName);
             var methodInfo = context.GetMethodInfo(methodId);
 
-            if(context.DynamicMethodSignatures)
-                argValues = new IValue[argCount];
-            else
-                argValues = new IValue[methodInfo.Params.Length];
-
-            bool[] signatureCheck = new bool[argCount];
-
-            // fact args
-            for (int i = 0; i < factArgs.Length; i++)
+            if (argCount > methodInfo.Params.Length)
             {
-                var argValue = factArgs[i];
-                if (argValue.DataType == DataType.NotAValidValue)
+                throw RuntimeException.TooManyArgumentsPassed();
+            }
+
+            //bool[] signatureCheck = new bool[argCount];
+            if (context.DynamicMethodSignatures)
+            {
+                argValues = new IValue[argCount];
+                for (int i = 0; i < argCount; ++i)
                 {
-                    signatureCheck[i] = false;
-                }
-                else
-                {
-                    signatureCheck[i] = true;
-                    if (context.DynamicMethodSignatures)
+                    var argValue = factArgs[i];
+                    if (argValue.DataType != DataType.NotAValidValue)
                     {
                         argValues[i] = BreakVariableLink(argValue);
                     }
-                    else if (i < methodInfo.Params.Length)
+                }
+            }
+            else
+            {
+                argValues = new IValue[methodInfo.Params.Length];
+                for (int i = 0; i < argCount; ++i)
+                {
+                    var argValue = factArgs[i];
+                    if (argValue.DataType != DataType.NotAValidValue)
                     {
                         if (methodInfo.Params[i].IsByValue)
                             argValues[i] = BreakVariableLink(argValue);
                         else
                             argValues[i] = argValue;
                     }
+                    else
+                    {
+                        //signatureCheck[i] = false;
+                    }
                 }
 
-            }
-            factArgs = null;
-            if (!context.DynamicMethodSignatures)
-            {
-                CheckFactArguments(methodInfo, signatureCheck);
+                if (argCount < methodInfo.Params.Length 
+                    && methodInfo.Params.Skip(argCount).Any(param => !param.HasDefaultValue))
+                {
+                    throw RuntimeException.TooLittleArgumentsPassed();
+                }
 
                 //manage default vals
-                for (int i = argCount; i < argValues.Length; i++)
+                for (int i = argCount; i < argValues.Length; ++i)
                 {
                     if (methodInfo.Params[i].HasDefaultValue)
                     {
@@ -1134,7 +1140,8 @@ namespace ScriptEngine.Machine
                     }
                 }
             }
-        }
+            factArgs = null;
+       }
 
         private void CheckFactArguments(MethodInfo methInfo, bool[] argsPassed)
         {
