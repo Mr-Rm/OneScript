@@ -1072,28 +1072,17 @@ namespace ScriptEngine.Machine
         {
             var argCount = (int)_operationStack.Pop().AsNumber();
             IValue[] factArgs = new IValue[argCount];
-            for (int i = argCount - 1; i >= 0; i--)
+            for (int i = argCount - 1; i >= 0; --i)
             {
                 factArgs[i] = _operationStack.Pop();
             }
 
             var objIValue = _operationStack.Pop();
-            //if (objIValue.DataType != DataType.Object)
-            //{
-            //    throw RuntimeException.ValueIsNotObjectException();
-            //}
-
+ 
             context = objIValue.AsObject(); // throws ValueIsNotObjectException
             var methodName = _module.Constants[arg].AsString();
             methodId = context.FindMethod(methodName);
-            var methodInfo = context.GetMethodInfo(methodId);
 
-            if (argCount > methodInfo.Params.Length)
-            {
-                throw RuntimeException.TooManyArgumentsPassed();
-            }
-
-            //bool[] signatureCheck = new bool[argCount];
             if (context.DynamicMethodSignatures)
             {
                 argValues = new IValue[argCount];
@@ -1108,12 +1097,21 @@ namespace ScriptEngine.Machine
             }
             else
             {
+                var methodInfo = context.GetMethodInfo(methodId);
+
+                if (argCount > methodInfo.Params.Length)
+                {
+                    throw RuntimeException.TooManyArgumentsPassed();
+                }
+
+                //bool[] signatureCheck = new bool[argCount];
                 argValues = new IValue[methodInfo.Params.Length];
                 for (int i = 0; i < argCount; ++i)
                 {
                     var argValue = factArgs[i];
                     if (argValue.DataType != DataType.NotAValidValue)
                     {
+                        //signatureCheck[i] = true;
                         if (methodInfo.Params[i].IsByValue)
                             argValues[i] = BreakVariableLink(argValue);
                         else
