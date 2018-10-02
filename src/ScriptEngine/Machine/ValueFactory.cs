@@ -46,7 +46,7 @@ namespace ScriptEngine.Machine
 
         public static IValue CreateInvalidValueMarker()
         {
-            return new InvalidValue();
+            return InvalidValue.Instance;
         }
 
         public static IValue CreateNullValue()
@@ -144,6 +144,9 @@ namespace ScriptEngine.Machine
 
         class InvalidValue : IValue
         {
+            private static IValue _instance = new InvalidValue();
+
+            internal static IValue Instance => _instance;
 
             #region IValue Members
 
