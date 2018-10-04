@@ -1647,26 +1647,28 @@ namespace ScriptEngine.Compiler
 
             NextToken();
             BuildExpression(Token.Comma);
-            if (_lastExtractedLexem.Token != Token.Comma)
-                throw CompilerException.UnexpectedOperation();
+            //if (_lastExtractedLexem.Token != Token.Comma)
+            //    throw CompilerException.UnexpectedOperation();
             
             AddCommand(OperationCode.MakeBool, 0);
             var addrOfCondition = AddCommand(OperationCode.JmpFalse, -1);
 
             NextToken();
             BuildExpression(Token.Comma); // построили true-part
-            if (_lastExtractedLexem.Token != Token.Comma)
-                throw CompilerException.UnexpectedOperation();
+            //if (_lastExtractedLexem.Token != Token.Comma)
+            //    throw CompilerException.UnexpectedOperation();
 
             var endOfTruePart = AddCommand(OperationCode.Jmp, -1); // уход в конец оператора
-            
-            CorrectCommandArgument(addrOfCondition, AddCommand(OperationCode.Nop, 0)); // отметили, куда переходить по false
+
+            //CorrectCommandArgument(addrOfCondition, AddCommand(OperationCode.Nop, 0)); // отметили, куда переходить по false
+            CorrectCommandArgument(addrOfCondition, _module.Code.Count ); // отметили, куда переходить по false
             NextToken();
             BuildExpression(Token.ClosePar); // построили false-part
-            
-            var endOfFalsePart = AddCommand(OperationCode.Nop, 0);
-            CorrectCommandArgument(endOfTruePart, endOfFalsePart);
-            
+
+            //var endOfFalsePart = AddCommand(OperationCode.Nop, 0);
+            //CorrectCommandArgument(endOfTruePart, endOfFalsePart);
+            CorrectCommandArgument(endOfTruePart, _module.Code.Count );
+
             NextToken();
 
         }
