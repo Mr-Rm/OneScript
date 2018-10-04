@@ -24,7 +24,8 @@ namespace ScriptEngine.Machine
         private ExecutionFrame _currentFrame;
         private Action<int>[] _commands;
         private Stack<ExceptionJumpInfo> _exceptionsStack;
-        
+        private int _argNum;
+
         private LoadedModule _module;
         private ICodeStatCollector _codeStatCollector;
         private MachineStopManager _stopManager;
@@ -855,7 +856,7 @@ namespace ScriptEngine.Machine
             var scope = _scopes[methodRef.ContextIndex];
             var methInfo = scope.Methods[methodRef.CodeIndex];
 
-            int argCount = (int)_operationStack.Pop().AsNumber();
+            int argCount = _argNum;
             IValue[] argValues = new IValue[argCount];
 
             // fact args
@@ -1014,7 +1015,7 @@ namespace ScriptEngine.Machine
 
         private void ArgNum(int arg)
         {
-            _operationStack.Push(ValueFactory.Create(arg));
+            _argNum = arg;
             NextInstruction();
         }
 
@@ -1070,7 +1071,7 @@ namespace ScriptEngine.Machine
 
         private void PrepareContextCallArguments(int arg, out IRuntimeContextInstance context, out int methodId, out IValue[] argValues)
         {
-            var argCount = (int)_operationStack.Pop().AsNumber();
+            var argCount = _argNum;
             IValue[] factArgs = new IValue[argCount];
             for (int i = argCount - 1; i >= 0; --i)
             {
