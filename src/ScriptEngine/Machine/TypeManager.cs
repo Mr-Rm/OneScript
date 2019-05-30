@@ -227,10 +227,12 @@ namespace ScriptEngine.Machine
     public static class TypeManager
     {
         private static ITypeManager _instance;
+        private static Dictionary<Type, TypeFactory> _factories;
 
         internal static void Initialize(ITypeManager instance)
         {
             _instance = instance;
+            _factories = new Dictionary<Type, TypeFactory>();
         }
 
         public static ITypeManager Instance => _instance;
@@ -293,7 +295,7 @@ namespace ScriptEngine.Machine
             }
         }
 
-        public static Type GetFactoryFor(string typeName)
+        public static TypeFactory GetFactoryFor(string typeName)
         {
             int typeId;
             Type clrType;
@@ -314,7 +316,13 @@ namespace ScriptEngine.Machine
                 }
             }
 
-            return clrType;
+            if(!_factories.TryGetValue(clrType, out var factory))
+            {
+                factory = new TypeFactory(clrType);
+                _factories[clrType] = factory;
+            }
+
+            return factory;
         }
     }
 

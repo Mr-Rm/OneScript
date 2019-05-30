@@ -417,7 +417,7 @@ namespace ScriptEngine.Compiler
             }
 
             string date = numbers.ToString();
- 
+
             if (date != "00000000000000")
                 DateTime.ParseExact(date, "yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture);
 
