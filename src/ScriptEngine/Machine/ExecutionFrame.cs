@@ -32,6 +32,50 @@ namespace ScriptEngine.Machine
         {
             return $"{MethodName}: {LineNumber} ({Module.ModuleInfo.ModuleName})";
         }
+
+        public ExecutionFrame(LoadedModule module)
+        {
+            Module = module;
+        }
+
+        public void SetParameters(MethodDescriptor method, IValue[] arguments)
+        {
+            var parameters = method.Signature.Params;
+            for (int i = 0; i < parameters.Length; ++i)
+            {
+                if (i >= arguments.Length)
+                    Locals[i] = Variable.Create(GetDefaultArgValue(parameters, i), method.Variables[i]);
+                else if (arguments[i] is IVariable)
+                {
+                    if (parameters[i].IsByValue)
+                    {
+                        var value = ((IVariable)arguments[i]).Value;
+                        Locals[i] = Variable.Create(value, method.Variables[i]);
+                    }
+                    else
+                    {
+                        // TODO: Alias ?
+                        Locals[i] =
+                            Variable.CreateReference((IVariable)arguments[i], method.Variables[i].Identifier);
+                    }
+                }
+                else if (arguments[i] == null || arguments[i].DataType == DataType.NotAValidValue)
+                    Locals[i] = Variable.Create(GetDefaultArgValue( parameters, i), method.Variables[i]);
+                else
+                    Locals[i] = Variable.Create(arguments[i], method.Variables[i]);
+            }
+        }
+
+        private IValue GetDefaultArgValue(ParameterDefinition[] parameters, int paramIndex)
+        {
+            var param = parameters[paramIndex];
+            if (!param.IsDefaultValueDefined())
+            {
+                return ValueFactory.Create();
+            }
+
+            return Module.Constants[param.DefaultValueIndex];
+        }
     }
 
     public struct ExecutionFrameInfo
