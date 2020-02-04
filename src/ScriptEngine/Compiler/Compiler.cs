@@ -880,25 +880,16 @@ namespace ScriptEngine.Compiler
             var condition = AddCommand(OperationCode.JmpFalse, DUMMY_ADDRESS);
             BuildLoadVariable(identifier);
 
-            var loopRecord = NestedLoopInfo.New();
-            loopRecord.startPoint = loopBegin;
-            _nestedLoops.Push(loopRecord);
+            BeginLoop( loopBegin );
 
             NextToken();
-            bool savedTryFlag = SetTryBlockFlag(false);
-            BuildCodeBatch(Token.EndLoop);
-            SetTryBlockFlag(savedTryFlag);
+            BuildLoopBody();
 
-            if (_lastExtractedLexem.Token == Token.EndLoop)
-            {
-                AddLineNumber(_lastExtractedLexem.LineNumber, CodeGenerationFlags.CodeStatistics | CodeGenerationFlags.DebugCode);
-            }
-
+            AddLineNumber(_lastExtractedLexem.LineNumber, CodeGenerationFlags.CodeStatistics | CodeGenerationFlags.DebugCode);
             AddCommand(OperationCode.Jmp, loopBegin);
 
-            var indexLoopEnd = AddCommand(OperationCode.StopIterator);
-            CorrectCommandArgument(condition, indexLoopEnd);
-            CorrectBreakStatements(_nestedLoops.Pop(), indexLoopEnd);
+            EndLoop(condition, AddCommand(OperationCode.StopIterator));
+
             NextToken();
         }
 
@@ -930,26 +921,17 @@ namespace ScriptEngine.Compiler
             CorrectCommandArgument(jmpIndex, counterIndex);
             var conditionIndex = AddCommand(OperationCode.JmpCounter, DUMMY_ADDRESS);
 
-            var loopRecord = NestedLoopInfo.New();
-            loopRecord.startPoint = indexLoopBegin;
-            _nestedLoops.Push(loopRecord);
+            BeginLoop(indexLoopBegin);
 
             NextToken();
-            bool savedTryFlag = SetTryBlockFlag(false);
-            BuildCodeBatch(Token.EndLoop);
-            SetTryBlockFlag(savedTryFlag);
+            BuildLoopBody();
 
-            if (_lastExtractedLexem.Token == Token.EndLoop)
-            {
-                AddLineNumber(_lastExtractedLexem.LineNumber, CodeGenerationFlags.CodeStatistics | CodeGenerationFlags.DebugCode);
-            }
-
+            AddLineNumber(_lastExtractedLexem.LineNumber, CodeGenerationFlags.CodeStatistics | CodeGenerationFlags.DebugCode);
             // jmp to start
             AddCommand(OperationCode.Jmp, indexLoopBegin);
 
-            var indexLoopEnd = AddCommand(OperationCode.PopTmp, 1);
-            CorrectCommandArgument(conditionIndex, indexLoopEnd);
-            CorrectBreakStatements(_nestedLoops.Pop(), indexLoopEnd);
+            EndLoop(conditionIndex, AddCommand(OperationCode.PopTmp, 1));
+
             NextToken();
         }
 
@@ -959,27 +941,18 @@ namespace ScriptEngine.Compiler
 
             NextToken();
             var conditionIndex = _module.Code.Count;
-            var loopRecord = NestedLoopInfo.New();
-            loopRecord.startPoint = conditionIndex;
-            _nestedLoops.Push(loopRecord);
+
+            BeginLoop(conditionIndex); 
             BuildExpressionUpTo(Token.Loop);
 
             var jumpFalseIndex = AddCommand(OperationCode.JmpFalse, DUMMY_ADDRESS);
             NextToken();
-            bool savedTryFlag = SetTryBlockFlag(false);
-            BuildCodeBatch(Token.EndLoop);
-            SetTryBlockFlag(savedTryFlag);
+            BuildLoopBody();
 
-            if (_lastExtractedLexem.Token == Token.EndLoop)
-            {
-                AddLineNumber(_lastExtractedLexem.LineNumber, CodeGenerationFlags.CodeStatistics | CodeGenerationFlags.DebugCode);
-            }
-
+            AddLineNumber(_lastExtractedLexem.LineNumber, CodeGenerationFlags.CodeStatistics | CodeGenerationFlags.DebugCode);
             AddCommand(OperationCode.Jmp, conditionIndex);
 
-            var endLoop = AddCommand(OperationCode.Nop);
-            CorrectCommandArgument(jumpFalseIndex, endLoop);
-            CorrectBreakStatements(_nestedLoops.Pop(), endLoop);
+            EndLoop(jumpFalseIndex, AddCommand(OperationCode.Nop));
 
             NextToken();
         }
@@ -1114,13 +1087,29 @@ namespace ScriptEngine.Compiler
             _module.Code[index] = cmd;
         }
 
-        private void CorrectBreakStatements(NestedLoopInfo nestedLoopInfo, int endLoopIndex)
+        private void BeginLoop(int startLoopIndex)
         {
+            var loopRecord = NestedLoopInfo.New();
+            loopRecord.startPoint = startLoopIndex;
+            _nestedLoops.Push(loopRecord);
+        }
+
+        private void EndLoop(int conditionIndex, int endLoopIndex)
+        {
+            CorrectCommandArgument(conditionIndex, endLoopIndex);
+            NestedLoopInfo nestedLoopInfo = _nestedLoops.Pop();
             foreach (var breakCmdIndex in nestedLoopInfo.breakStatements)
             {
                 CorrectCommandArgument(breakCmdIndex, endLoopIndex);
             }
         }
+        private void BuildLoopBody()
+        {
+            bool savedTryFlag = SetTryBlockFlag(false);
+            BuildCodeBatch(Token.EndLoop);
+            SetTryBlockFlag(savedTryFlag);
+        }
+
 
         private bool SetTryBlockFlag(bool isInTry)
         {
