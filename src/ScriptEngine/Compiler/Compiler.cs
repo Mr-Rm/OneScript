@@ -41,6 +41,7 @@ namespace ScriptEngine.Compiler
         private readonly Stack<NestedLoopInfo> _nestedLoops = new Stack<NestedLoopInfo>();
         private readonly List<ForwardedMethodDecl> _forwardedMethods = new List<ForwardedMethodDecl>();
         private readonly List<AnnotationDefinition> _annotations = new List<AnnotationDefinition>();
+        private readonly List<int> _returns = new List<int>();
 
         private struct ForwardedMethodDecl
         {
@@ -666,11 +667,11 @@ namespace ScriptEngine.Compiler
 
         private void DispatchMethodBody()
         {
+            _returns.Clear();
+
             _inMethodScope = true;
             BuildVariableDefinitions();
             _isStatementsDefined = true;
-
-            var codeStart = _module.Code.Count;
 
             BuildCodeBatch(_isFunctionProcessed? Token.EndFunction : Token.EndProcedure);
 
@@ -695,15 +696,10 @@ namespace ScriptEngine.Compiler
 
             AddCommand(OperationCode.Return);
 
+            // заменим Return на Jmp <сюда>
+            foreach(var addr in _returns)
             {
-                // заменим Return на Jmp <сюда>
-                for (var i = codeStart; i < codeEnd; i++)
-                {
-                    if (_module.Code[i].Code == OperationCode.Return)
-                    {
-                        _module.Code[i] = new Command() { Code = OperationCode.Jmp, Argument = codeEnd };
-                    }
-                }
+                CorrectCommandArgument(addr, codeEnd);
             }
 
             _isStatementsDefined = false;
@@ -1049,7 +1045,7 @@ namespace ScriptEngine.Compiler
                 throw CompilerException.ReturnOutsideOfMethod();
             }
 
-            AddCommand(OperationCode.Return);
+            _returns.Add( AddCommand(OperationCode.Jmp, DUMMY_ADDRESS) ); // переход в конец функции
         }
 
         private void BuildTryExceptStatement()
