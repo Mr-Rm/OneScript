@@ -136,6 +136,10 @@ namespace ScriptEngine.Compiler
         {
             return new CompilerException(Locale.NStr("ru='Ожидается числовая константа';en='Numeric constant expected'"));
         }
+        public static CompilerException ConvertToNumberException()
+        {
+            return new CompilerException("Преобразование к типу 'Число' не поддерживается");
+        }
 
     }
 

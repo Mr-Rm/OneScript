@@ -1508,8 +1508,9 @@ namespace ScriptEngine.Compiler
             }
 
             BuildPrimaryNode();
-            AddCommand(OperationCode.Neg);
+            CreateUnaryOp(OperationCode.Neg);
         }
+
 
         private void ProcessPrimaryUnaryPlus()
         {
@@ -1520,7 +1521,35 @@ namespace ScriptEngine.Compiler
             }
 
             BuildPrimaryNode();
-            AddCommand(OperationCode.Number);
+            CreateUnaryOp(OperationCode.Number);
+        }
+
+        private void CreateUnaryOp(OperationCode op)
+        {
+            var lastAddr = _module.Code.Count - 1;
+            if (_module.Code[lastAddr].Code == OperationCode.PushConst)
+            {
+                var arg = _module.Code[lastAddr].Argument;
+                var cnst = _module.Constants[arg];
+                var val = ValueFactory.Parse(cnst.Presentation, cnst.Type);
+                try
+                {
+                    var num = (op == OperationCode.Neg ? -val.AsNumber() : val.AsNumber());
+                    ConstDefinition cDef = new ConstDefinition()
+                    {
+                        Type = DataType.Number,
+                        Presentation = num.ToString()
+                    };
+                    var cNum = GetConstNumber(ref cDef);
+                    CorrectCommandArgument(lastAddr, cNum);
+                }
+                catch (RuntimeException)
+                {
+                    throw CompilerException.ConvertToNumberException();
+                }
+            }
+            else
+                AddCommand(op);
         }
 
         private void ProcessSubexpression()
