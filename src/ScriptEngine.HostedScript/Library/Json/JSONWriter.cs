@@ -35,6 +35,7 @@ namespace ScriptEngine.HostedScript.Library.Json
         }
 
         private bool _escapeNonAscii;
+        private bool _escapeNotInBMP;
 
         /// <summary>
         /// 
@@ -60,6 +61,7 @@ namespace ScriptEngine.HostedScript.Library.Json
             _writer.Formatting = Formatting.Indented;
             _settings = new JSONWriterSettings();
             _escapeNonAscii = false;
+            _escapeNotInBMP = false;
         }
 
         private void SetOptions(IValue settings)
@@ -94,32 +96,16 @@ namespace ScriptEngine.HostedScript.Library.Json
                 if (jsonCharactersEscapeMode == jsonCharactersEscapeModeEnum.NotASCIISymbols)
                 {
                     _escapeNonAscii = true;
-                    _writer.QuoteChar = '\"';
-                    _writer.StringEscapeHandling = StringEscapeHandling.EscapeNonAscii;
                 }
                 else if (jsonCharactersEscapeMode == jsonCharactersEscapeModeEnum.SymbolsNotInBMP)
-                    throw new NotImplementedException();
+                {
+                    _escapeNotInBMP = true;
+                    _escapeNonAscii = false;
+                }
             }
         }
 
-        void WriteStringValue(string val)
-        { 
-            if (_settings.EscapeCharacters != null && _escapeNonAscii)
-            {
-                StringWriter wr = new StringWriter();
-                var jsonWriter = new JsonTextWriter(wr);
-                jsonWriter.QuoteChar = '\"';
-                jsonWriter.StringEscapeHandling = StringEscapeHandling.EscapeNonAscii;
-                new JsonSerializer().Serialize(jsonWriter, val);
-                string str = wr.ToString();
-                _writer.WriteRawValue(EscapeCharacters(str.Substring(1, str.Length - 2), false));
-
-            }
-            else
-                _writer.WriteRawValue(EscapeCharacters(val, true));
-        }
-
-        string EscapeCharacters(string sval, bool EscapeBackSlash)
+        string EscapeCharacters(string sval)
         {
             int Length = sval.Length;
             var sb = new StringBuilder(Length + 2);
@@ -138,9 +124,7 @@ namespace ScriptEngine.HostedScript.Library.Json
 
                     case '"':  sb.Append("\\\""); break;
 
-                    case '\\' when EscapeBackSlash:
-                        sb.Append("\\\\");
-                        break;
+                    case '\\': sb.Append("\\\\"); break;
 
                     case '/' when _settings.EscapeSlash:
                         sb.Append("\\/"); 
@@ -171,7 +155,7 @@ namespace ScriptEngine.HostedScript.Library.Json
                         break;
 
                     default:
-                        if (c >= 0 && c <= 31)
+                        if (c <= 31 || (_escapeNonAscii && c >= 128) || (_escapeNotInBMP && c >= 0xD800 && c <= 0xDFFF))
                         {
                             string unicode = "\\u" + ((int)c).ToString("X4");
                             sb.Append(unicode);
@@ -329,7 +313,7 @@ namespace ScriptEngine.HostedScript.Library.Json
             switch (value.DataType)
             {
                 case DataType.String:
-                     WriteStringValue(value.AsString());
+                    _writer.WriteRawValue(EscapeCharacters(value.AsString()));
                     break;
                 case DataType.Number:
                     decimal d = value.AsNumber();
