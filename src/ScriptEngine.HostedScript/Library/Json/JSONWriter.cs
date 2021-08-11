@@ -37,6 +37,14 @@ namespace ScriptEngine.HostedScript.Library.Json
         private bool _escapeNonAscii;
         private bool _escapeNotInBMP;
 
+        private string _escSlash;
+        private string _escAmpersand;
+        private string _escSingleQuote;
+        private string _escLT;
+        private string _escGT;
+        private string _escLineSeparator;
+        private string _escParagraphSeparator;
+
         /// <summary>
         /// 
         /// Возвращает true если для объекта чтения json был задан текст для парсинга.
@@ -62,6 +70,8 @@ namespace ScriptEngine.HostedScript.Library.Json
             _settings = new JSONWriterSettings();
             _escapeNonAscii = false;
             _escapeNotInBMP = false;
+
+            SetEscChars();
         }
 
         private void SetOptions(IValue settings)
@@ -69,7 +79,8 @@ namespace ScriptEngine.HostedScript.Library.Json
             _settings = (JSONWriterSettings)settings.GetRawValue();
             if (_settings.UseDoubleQuotes)
                 _writer.QuoteChar = '\"';
-            else { 
+            else
+            {
                 _writer.QuoteChar = '\'';
             }
 
@@ -103,6 +114,37 @@ namespace ScriptEngine.HostedScript.Library.Json
                     _escapeNonAscii = false;
                 }
             }
+
+            SetEscChars();
+        }
+
+        private void SetEscChars()
+        {
+            _escSlash = _settings.EscapeSlash ? "\\/" : "/";
+            _escAmpersand = _settings.EscapeAmpersand ? "\\u0026" : "&";
+            _escSingleQuote = (_settings.EscapeSingleQuotes || !_settings.UseDoubleQuotes) ? "\\u0027" : "'";
+
+            if (_settings.EscapeAngleBrackets)
+            {
+                _escLT = "\\u003C";
+                _escGT = "\\u003E";
+            }
+            else
+            {
+                _escLT = "<";
+                _escGT = ">";
+            }
+
+            if (_settings.EscapeLineTerminators)
+            {
+                _escLineSeparator = "\\u2028";
+                _escParagraphSeparator = "\\u2029";
+            }
+            else
+            {
+                _escLineSeparator = "\x2028";
+                _escParagraphSeparator = "\x2029";
+            }
         }
 
         string EscapeCharacters(string sval)
@@ -126,36 +168,22 @@ namespace ScriptEngine.HostedScript.Library.Json
 
                     case '\\': sb.Append("\\\\"); break;
 
-                    case '/' when _settings.EscapeSlash:
-                        sb.Append("\\/"); 
-                        break;
+                    case '/': sb.Append(_escSlash); break;
 
-                    case '&' when _settings.EscapeAmpersand:
-                        sb.Append("\\u0026");
-                        break;
+                    case '&': sb.Append(_escAmpersand); break;
 
-                    case '\'' when _settings.EscapeSingleQuotes || !_settings.UseDoubleQuotes:
-                        sb.Append("\\u0027");
-                        break;
+                    case '\'': sb.Append(_escSingleQuote); break;
 
-                    case '<' when _settings.EscapeAngleBrackets:
-                        sb.Append("\\u003C");
-                        break;
+                    case '<': sb.Append(_escLT); break;
+                    case '>': sb.Append(_escGT); break;
 
-                    case '>' when _settings.EscapeAngleBrackets:
-                        sb.Append("\\u003E");
-                        break;
-
-                    case '\x2028' when _settings.EscapeLineTerminators:
-                        sb.Append("\\u2028");
-                        break;
-
-                    case '\x2029' when _settings.EscapeLineTerminators:
-                        sb.Append("\\u2029");
-                        break;
+                    case '\x2028': sb.Append(_escLineSeparator); break;
+                    case '\x2029': sb.Append(_escParagraphSeparator); break;
 
                     default:
-                        if (c <= 31 || (_escapeNonAscii && c >= 128) || (_escapeNotInBMP && c >= 0xD800 && c <= 0xDFFF))
+                        if (c <= 31 
+                            || (_escapeNonAscii && c >= 128)
+                            || (_escapeNotInBMP && c >= 0xD800 && c <= 0xDFFF))
                         {
                             string unicode = "\\u" + ((int)c).ToString("X4");
                             sb.Append(unicode);
