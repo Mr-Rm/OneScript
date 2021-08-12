@@ -10,6 +10,9 @@ using ScriptEngine.Machine.Contexts;
 
 namespace ScriptEngine.HostedScript.Library.Json
 {
+    using JSONCharactersEscapeType = SelfAwareEnumValue<JSONCharactersEscapeModeEnum>;
+    using JSONLineBreakType = SelfAwareEnumValue<JSONLineBreakEnum>;
+
     /// <summary>
     /// 
     /// Определяет набор параметров, используемых при записи JSON.
@@ -20,23 +23,33 @@ namespace ScriptEngine.HostedScript.Library.Json
 
         private bool _useDoubleQuotes;
 
-        private IValue _newLines;
+        private JSONLineBreakType _newLines;
 
         private string _paddingSymbols;
 
-        private IValue _escapeCharacters;
-
+        private JSONCharactersEscapeType _escapeCharacters;
         private bool _escapeAmpersand;
-
         private bool _escapeSingleQuotes;
-
         private bool _escapeLineTerminators;
-
         private bool _escapeSlash;
-
         private bool _escapeAngleBrackets;
 
-        public JSONWriterSettings(IValue NewLines = null, string PaddingSymbols = null, bool UseDoubleQuotes = true, IValue EscapeCharacters = null, bool EscapeAngleBrackets = false, bool EscapeLineTerminators = true, bool EscapeAmpersand = false, bool EscapeSingleQuotes = false, bool EscapeSlash = false)
+        public JSONWriterSettings()
+        {
+            _newLines = (JSONLineBreakType)GlobalsManager.GetEnum<JSONLineBreakEnum>().Auto;
+            _paddingSymbols = "";
+            _useDoubleQuotes = true;
+            _escapeCharacters = (JSONCharactersEscapeType)GlobalsManager.GetEnum<JSONCharactersEscapeModeEnum>().None;
+            _escapeAngleBrackets = false;
+            _escapeLineTerminators = true;
+            _escapeAmpersand = false;
+            _escapeSingleQuotes = false;
+            _escapeSlash = false;
+        }
+
+        public JSONWriterSettings(JSONLineBreakType NewLines , string PaddingSymbols, bool UseDoubleQuotes,
+            JSONCharactersEscapeType EscapeCharacters, bool EscapeAngleBrackets, bool EscapeLineTerminators,
+            bool EscapeAmpersand, bool EscapeSingleQuotes, bool EscapeSlash)
         {
             _newLines = NewLines;
             _paddingSymbols = PaddingSymbols;
@@ -48,7 +61,6 @@ namespace ScriptEngine.HostedScript.Library.Json
             _escapeSingleQuotes = EscapeSingleQuotes;
             _escapeSlash = EscapeSlash;
         }
-
 
         /// <summary>
         /// 
@@ -85,29 +97,53 @@ namespace ScriptEngine.HostedScript.Library.Json
         /// Определяет, будет ли экранироваться слеш (косая черта) при записи значения.
         /// Значение по умолчанию: Ложь. </param>
         [ScriptConstructor(Name = "По описанию параметров записи")]
-        public static JSONWriterSettings Constructor(IValue newLines = null, IValue paddingSymbols = null, IValue useDoubleQuotes = null, IValue escapeCharacters = null, IValue escapeAngleBrackets = null, IValue escapeLineTerminators = null, IValue escapeAmpersand = null, IValue escapeSingleQuotes = null, IValue escapeSlash = null)
+        public static JSONWriterSettings Constructor(IValue newLines = null, string paddingSymbols = "", bool useDoubleQuotes = true,
+            IValue escapeCharacters = null, bool escapeAngleBrackets = false, bool escapeLineTerminators = true,
+            bool escapeAmpersand = false, bool escapeSingleQuotes = false, bool escapeSlash = false)
         {
-            return new JSONWriterSettings(newLines,
-                                          (paddingSymbols == null ? null : paddingSymbols.AsString()),
-                                          (useDoubleQuotes == null? true: useDoubleQuotes.AsBoolean()),
-                                          escapeCharacters,
-                                          (escapeAngleBrackets == null ? false : escapeAngleBrackets.AsBoolean()),
-                                          (escapeLineTerminators == null ? true : escapeLineTerminators.AsBoolean()),
-                                          (escapeAmpersand == null ? false : escapeAmpersand.AsBoolean()),
-                                          (escapeSingleQuotes == null ? false : escapeSingleQuotes.AsBoolean()),
-                                          (escapeSlash == null ? false : escapeSlash.AsBoolean()));
+            JSONLineBreakType linesBreakMode;
+            JSONCharactersEscapeType escapeCharactersMode;
+
+            if (newLines == null)
+            {
+                var LineBreakEnum = GlobalsManager.GetEnum<JSONLineBreakEnum>();
+                linesBreakMode = (JSONLineBreakType)LineBreakEnum.Auto;
+            }
+            else if (newLines.GetRawValue() is JSONLineBreakType lineBr)
+            {
+                linesBreakMode = lineBr;
+            }
+            else
+                throw RuntimeException.InvalidNthArgumentType(1);
+
+
+            if (escapeCharacters == null)
+            {
+                var JsonCharactersEscapeModeEnum = GlobalsManager.GetEnum<JSONCharactersEscapeModeEnum>();
+                escapeCharactersMode = (JSONCharactersEscapeType)JsonCharactersEscapeModeEnum.None;
+            }
+            else if (escapeCharacters.GetRawValue() is JSONCharactersEscapeType escCh)
+            {
+                escapeCharactersMode = escCh;
+            }
+            else
+                throw RuntimeException.InvalidNthArgumentType(4);
+
+            return new JSONWriterSettings(linesBreakMode, paddingSymbols, useDoubleQuotes,
+                                          escapeCharactersMode, escapeAngleBrackets, escapeLineTerminators,
+                                          escapeAmpersand, escapeSingleQuotes, escapeSlash );
         }
 
         /// <summary>
         /// 
-        /// 
+        /// Never used
         /// </summary>
         ///
-        [ScriptConstructor]
-        public static JSONWriterSettings Constructor()
-        {
-            return new JSONWriterSettings();
-        }
+        //[ScriptConstructor]
+        //public static JSONWriterSettings Constructor()
+        //{
+        //    return new JSONWriterSettings();
+        //}
 
         /// <summary>
         /// 
@@ -131,12 +167,7 @@ namespace ScriptEngine.HostedScript.Library.Json
         /// </summary>
         /// <value>ПереносСтрокJSON (JSONLineBreak)</value>
         [ContextProperty("ПереносСтрок", "NewLines")]
-        public IValue NewLines
-        {
-            get { return _newLines; }
-	
-        }
-
+        public JSONLineBreakType NewLines => _newLines;
 
         /// <summary>
         /// 
@@ -160,11 +191,7 @@ namespace ScriptEngine.HostedScript.Library.Json
         /// </summary>
         /// <value>ЭкранированиеСимволовJSON (JSONCharactersEscapeMode)</value>
         [ContextProperty("ЭкранированиеСимволов", "EscapeCharacters")]
-        public IValue EscapeCharacters
-        {
-            get { return _escapeCharacters; }
-	
-        }
+        public JSONCharactersEscapeType EscapeCharacters => _escapeCharacters;
 
 
         /// <summary>
