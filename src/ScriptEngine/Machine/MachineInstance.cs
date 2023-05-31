@@ -1196,12 +1196,16 @@ namespace ScriptEngine.Machine
                         else
                             argValues[i] = argValue.GetRawValue();
                     }
-                    else if(!methodParams[i].HasDefaultValue)
+                    else if (methodParams[i].HasDefaultValue)
+                        argValues[i] = (IValue)methodParams[i].DefaultValue;
+                    else
                         throw RuntimeException.MissedArgument();
                 }
                 for (; i < methodParams.Length; i++)
                 {
-                    if (!methodParams[i].HasDefaultValue)
+                    if (methodParams[i].HasDefaultValue)
+                        argValues[i] = (IValue)methodParams[i].DefaultValue;
+                    else
                         throw RuntimeException.TooFewArgumentsPassed();
                 }
             }

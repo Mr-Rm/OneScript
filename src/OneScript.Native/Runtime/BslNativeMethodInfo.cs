@@ -5,8 +5,10 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using OneScript.Contexts;
@@ -42,24 +44,10 @@ namespace OneScript.Native.Runtime
 
         public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
         {
-            // FIXME: Из стековой машины дефолтные значения могут прийти, как null или Skipped
-            // здесь мы принудительно проставляем пропущенные параметры
-            var bslArguments = new BslValue[parameters.Length];
-            for (int i = 0; i < bslArguments.Length; i++)
-            {
-                var param = parameters[i];
-                if (param == null || param == BslSkippedParameterValue.Instance)
-                {
-                    Debug.Assert(_parameters[i].HasDefaultValue);
-                    bslArguments[i] = (BslValue)_parameters[i].DefaultValue;
-                }
-                else
-                {
-                    bslArguments[i] = (BslValue)param;
-                }
-            }
+            var bslArguments = new List<BslValue>(parameters.Length);
+            bslArguments.AddRange(parameters.Cast<BslValue>());
 
-            return _callable.Invoke(obj, bslArguments);
+            return _callable.Invoke(obj, bslArguments.ToArray());
         }
         
     }

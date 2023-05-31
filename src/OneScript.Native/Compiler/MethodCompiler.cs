@@ -1130,7 +1130,7 @@ namespace OneScript.Native.Compiler
             return argList.Children.Select(passedArg =>
                 passedArg.Children.Count > 0
                     ? ConvertToExpressionTree(passedArg.Children[0])
-                    : null);
+                    : Expression.Constant(BslSkippedParameterValue.Instance));
         }
 
         protected override void VisitObjectFunctionCall(BslSyntaxNode node)
@@ -1440,9 +1440,9 @@ namespace OneScript.Native.Compiler
 
         private Expression PassSingleParameter(Expression passedArg, Type targetType, CodeRange location)
         {
-            if (passedArg == null)
+            if (passedArg == null) // не должно срабатывать
             {
-                return Expression.Default(targetType);
+                return Expression.Constant(BslSkippedParameterValue.Instance);
             }
             
             var convertedOrDirect = ExpressionHelpers.TryConvertParameter(passedArg, targetType);

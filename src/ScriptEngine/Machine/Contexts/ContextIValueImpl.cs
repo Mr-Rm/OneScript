@@ -283,15 +283,43 @@ namespace ScriptEngine.Machine.Contexts
             var parameters = GetMethodInfo(methIdx).GetParameters();
             var valueArgs = new IValue[parameters.Length];
             var passedArgs = args.Select(x => ContextValuesMarshaller.ConvertDynamicValue(x)).ToArray();
-            
-            for (int i = 0; i < valueArgs.Length; i++)
-            {
-                if (i < passedArgs.Length)
-                    valueArgs[i] = passedArgs[i];
-                else
-                    valueArgs[i] = ValueFactory.CreateInvalidValueMarker();
-            }
 
+            var argCount = passedArgs.Length;
+            if (argCount > parameters.Length)
+                throw RuntimeException.TooManyArgumentsPassed();
+
+            int i = 0;
+            for (; i < argCount; i++)
+            {
+                var argValue = passedArgs[i];
+                if (!argValue.IsSkippedArgument())
+                {
+                    if (parameters[i].IsByRef())
+                        valueArgs[i] = argValue;
+                    else
+                        valueArgs[i] = argValue.GetRawValue();
+                }
+                else if (parameters[i].HasDefaultValue)
+                    valueArgs[i] = (IValue)parameters[i].DefaultValue;
+                else
+                    throw RuntimeException.MissedArgument();
+            }
+            for (; i < parameters.Length; i++)
+            {
+                if (parameters[i].HasDefaultValue)
+                    valueArgs[i] = (IValue)parameters[i].DefaultValue;
+                else
+                    throw RuntimeException.TooFewArgumentsPassed();
+            }
+            /*
+             for (int i = 0; i < valueArgs.Length; i++)
+             {
+                 if (i < passedArgs.Length)
+                     valueArgs[i] = passedArgs[i];
+                 else
+                     valueArgs[i] = ValueFactory.CreateInvalidValueMarker();
+             }
+             */
             CallAsFunction(methIdx, valueArgs, out IValue methResult);
             result = methResult == null ? null : ContextValuesMarshaller.ConvertToClrObject(methResult);
 
