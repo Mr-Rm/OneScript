@@ -14,6 +14,8 @@ namespace ScriptEngine.Machine
         private readonly List<string> _names = new List<string>();
         private readonly Dictionary<string, int> _nameIndexes = new Dictionary<string, int>(StringComparer.InvariantCultureIgnoreCase);
 
+        public Dictionary<string, int> Indexes => _nameIndexes;
+
         public bool TryGetIdOfName(string name, out int id)
         {
             return _nameIndexes.TryGetValue(name, out id);
@@ -36,5 +38,6 @@ namespace ScriptEngine.Machine
 
             return id;
         }
+
     }
 }

@@ -64,6 +64,22 @@ namespace ScriptEngine.Machine.Contexts
         {
             return _values.IndexOf(enumVal);
         }
+        
+        public string GetAliasForValue(EnumerationValue value)
+        {
+            var name = value.AsString();
+            _nameIds.TryGetIdOfName(name, out var id);
+            
+            foreach (var pair in _nameIds.Indexes)
+            {
+                if (pair.Value == id && pair.Key != name)
+                {
+                    return pair.Key;
+                }
+            }
+
+            return name;
+        }
 
         public override int GetPropCount()
         {

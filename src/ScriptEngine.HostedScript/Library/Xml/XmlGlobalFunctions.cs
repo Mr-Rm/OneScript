@@ -67,7 +67,7 @@ namespace ScriptEngine.HostedScript.Library.Xml
                 case DataType.Enumeration:
                     if (_allowedEnums.TryGetValue(value.SystemType, out var enumeration))
                     {
-                        return value.AsString();
+                        return enumeration.GetAliasForValue((EnumerationValue)value);
                     }
                     break;
 
