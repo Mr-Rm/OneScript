@@ -87,51 +87,15 @@ namespace OneScript.StandardLibrary.Text
         [ContextProperty("ЦветТекста", "TextColor")]
         public IValue TextColor
         {
-            get
-            {
-                try
-                {
-                    return ConsoleColorEnum.Instance.FromNativeValue(Console.ForegroundColor);
-                }
-                catch (InvalidOperationException)
-                {
-                    return null;
-                }
-            }
-            set
-            {
-                if (value.GetRawValue() is ClrEnumValueWrapper<ConsoleColor> typed)
-                {
-                    Console.ForegroundColor = typed.UnderlyingValue;
-                }
-                else
-                    throw new TypeConversionException();
-            }
+            get => Console.ForegroundColor.Wrap();
+            set => Console.ForegroundColor = ConsoleColorEnumExt.Unwrap(value);
         }
 
         [ContextProperty("ЦветФона", "BackgroundColor")]
         public IValue BackgroundColor
         {
-            get
-            {
-                try
-                {
-                    return GlobalsHelper.GetEnum<ConsoleColorEnum>().FromNativeValue(Console.BackgroundColor);
-                }
-                catch (InvalidOperationException)
-                {
-                    return null;
-                }
-            }
-            set
-            {
-                if (value.GetRawValue() is ClrEnumValueWrapper<ConsoleColor> typed)
-                {
-                    Console.BackgroundColor = typed.UnderlyingValue;
-                }
-                else
-                    throw new TypeConversionException();
-            }
+            get => Console.BackgroundColor.Wrap();
+            set => Console.BackgroundColor = ConsoleColorEnumExt.Unwrap(value);
         }
 
         /// <summary>

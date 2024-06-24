@@ -7,46 +7,65 @@ at http://mozilla.org/MPL/2.0/.
 
 using System;
 using OneScript.Contexts.Enums;
-using OneScript.Types;
+using OneScript.Exceptions;
+using ScriptEngine.Machine;
 using ScriptEngine.Machine.Contexts;
 
 namespace OneScript.StandardLibrary.Text
 {
-    [SystemEnum("ЦветКонсоли", "ConsoleColor")]
-    public class ConsoleColorEnum : ClrEnumWrapper<ConsoleColor>
+    [EnumerationType("ЦветКонсоли", "ConsoleColor")]
+    public enum ConsoleColorEnum
     {
-        private ConsoleColorEnum(TypeDescriptor typeRepresentation, TypeDescriptor valuesType)
-            : base(typeRepresentation, valuesType)
+        [EnumValue("Черный")]
+        Black = System.ConsoleColor.Black,
+        [EnumValue("ТемноСиний")]
+        DarkBlue = ConsoleColor.DarkBlue,
+        [EnumValue("ТемноЗеленый")]
+        DarkGreen = ConsoleColor.DarkGreen,
+        [EnumValue("ТемноБирюзовый")]
+        DarkCyan = ConsoleColor.DarkCyan,
+        [EnumValue("ТемноКрасный")]
+        DarkRed = ConsoleColor.DarkRed,
+        [EnumValue("ТемноМалиновый")]
+        DarkMagenta = ConsoleColor.DarkMagenta,
+        [EnumValue("ТемноЖелтый")]
+        DarkYellow = ConsoleColor.DarkYellow,
+        [EnumValue("Серый")]
+        Gray = ConsoleColor.Gray,
+
+        [EnumValue("ТемноСерый")]
+        DarkGray = System.ConsoleColor.DarkGray,
+        [EnumValue("Синий")]
+        Blue = ConsoleColor.Blue,
+        [EnumValue("Зеленый")]
+        Green = ConsoleColor.Green,
+        [EnumValue("Бирюза")]
+        Cyan = ConsoleColor.Cyan,
+        [EnumValue("Красный")]
+        Red = ConsoleColor.Red,
+        [EnumValue("Малиновый")]
+        Magenta = ConsoleColor.Magenta,
+        [EnumValue("Желтый")]
+        Yellow = ConsoleColor.Yellow,
+        [EnumValue("Белый")]
+        White = ConsoleColor.White
+    }
+    
+    public static class ConsoleColorEnumExt
+    {
+        public static IValue Wrap(this ConsoleColor color)
         {
+            return ClrEnumWrapper<ConsoleColorEnum>.Instance?.FromNativeValue((ConsoleColorEnum)color);
         }
 
-        public static ConsoleColorEnum CreateInstance(ITypeManager typeManager)
+        public static ConsoleColor Unwrap(IValue color)
         {
-            var instance = EnumContextHelper.CreateClrEnumInstance<ConsoleColorEnum, ConsoleColor>(
-                typeManager,
-                (t,v) => new ConsoleColorEnum(t,v));
-            
-            instance.WrapClrValue("Черный", "Black", ConsoleColor.Black);
-            instance.WrapClrValue("ТемноСиний", "DarkBlue", ConsoleColor.DarkBlue);
-            instance.WrapClrValue("ТемноЗеленый", "DarkGreen", ConsoleColor.DarkGreen);
-            instance.WrapClrValue("ТемноБирюзовый", "DarkCyan", ConsoleColor.DarkCyan);
-            instance.WrapClrValue("ТемноКрасный", "DarkRed", ConsoleColor.DarkRed);
-            instance.WrapClrValue("ТемноМалиновый", "DarkMagenta", ConsoleColor.DarkMagenta);
-            instance.WrapClrValue("ТемноЖелтый", "DarkYellow", ConsoleColor.DarkYellow);
-            instance.WrapClrValue("Серый", "Gray", ConsoleColor.Gray);
-            
-            instance.WrapClrValue("ТемноСерый", "DarkGray", ConsoleColor.DarkGray);
-            instance.WrapClrValue("Синий", "Blue", ConsoleColor.Blue);
-            instance.WrapClrValue("Зеленый", "Green", ConsoleColor.Green);
-            instance.WrapClrValue("Бирюза", "Cyan", ConsoleColor.Cyan);
-            instance.WrapClrValue("Красный", "Red", ConsoleColor.Red);
-            instance.WrapClrValue("Малиновый", "Magenta", ConsoleColor.Magenta);
-            instance.WrapClrValue("Желтый", "Yellow", ConsoleColor.Yellow);
-            instance.WrapClrValue("Белый", "White", ConsoleColor.White);
+            if (color.GetRawValue() is ClrEnumValueWrapper<ConsoleColorEnum> typed)
+            {
+                return (ConsoleColor)typed.UnderlyingValue;
+            }
 
-            OnInstanceCreation(instance);
-            
-            return instance;
+            throw new TypeConversionException();
         }
     }
 }
