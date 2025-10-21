@@ -146,6 +146,7 @@ namespace OneScript.Language
             key.value = val;
         }
 
+ 
         public bool ContainsKey(string key)
         {
             throw new System.NotImplementedException();
@@ -188,14 +189,16 @@ namespace OneScript.Language
             foreach (char ch in str)
             {
                 //key = node.Find(ch);
-                while (node.charL != ch && node.charU != ch)
+                while (node != null)
                 {
+                    if (node.charL == ch || node.charU == ch)
+                        break;
                     node = node.sibl;
-                    if (node==null)
-                    {
-                        value = default(T);
-                        return false;
-                    }
+                }
+                if (node == null)
+                {
+                    value = default(T);
+                    return false;
                 }
 
                 key = node;
