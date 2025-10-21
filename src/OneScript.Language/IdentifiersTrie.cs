@@ -5,6 +5,7 @@ was not distributed with this file, You can obtain one
 at http://mozilla.org/MPL/2.0/.
 ----------------------------------------------------------*/
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -22,7 +23,7 @@ namespace OneScript.Language
 
             public TrieNode Find(char ch)
             {
-                var node = sibl;
+                var node = this;
                 while (node != null)
                 {
                     if (node.charL == ch || node.charU == ch)
@@ -33,35 +34,116 @@ namespace OneScript.Language
             }
         }
 
-        private readonly TrieNode _root;
+        private TrieNode _root;
 
         public IdentifiersTrie()
         {
-            _root = new TrieNode();
+            //_root = new TrieNode();
         }
 
         public void Add(string str, T val)
         {
             var node = _root;
-            foreach (char ch in str)
+            var key = node;
+            int i = 0;
+            for (; i < str.Length; ++i)
             {
-                var key = node.Find(ch);
+                if (node == null)
+                {
+                    break;
+                }
+
+                char ch = str[i];
+                //key = node.Find(ch);
+                key = node;
+                TrieNode last=null;
+                do
+                {
+                    if (key.charL == ch || key.charU == ch)
+                        break;
+                    last = key;
+                    key = key.sibl;
+                } while (key != null);
+
                 if (key == null)
                 {
                     key = new TrieNode
                     {
                         charL = char.ToLower(ch),
                         charU = char.ToUpper(ch),
-                        value = default(T),
-                        sibl = node.sibl
                     };
-                    node.sibl = key;
-                    key.next = new TrieNode();
+
+                    last.sibl = key;
+                    ++i;
+                    break;
                 }
-                node = key.next;
+                else
+                {
+                    node = key.next;
+                }
             }
 
-            node.value = val;
+            if (i==0)
+            {
+                char ch = str[i];
+                _root = new TrieNode
+                {
+                    charL = char.ToLower(ch),
+                    charU = char.ToUpper(ch),
+                };
+                key = _root;
+                ++i;
+            }
+            for (; i < str.Length; ++i)
+            {
+                char ch = str[i];
+                node = new TrieNode
+                {
+                    charL = char.ToLower(ch),
+                    charU = char.ToUpper(ch),
+                };
+                key.next = node;
+                key = node;
+            }
+
+            key.value = val;
+        }
+
+        public void Add1(string str, T val)
+        {
+            var node = _root;
+            var key = node;
+            foreach (char ch in str)
+            {
+                if (node == null)
+                {
+                    node = new TrieNode
+                    {
+                        charL = char.ToLower(ch),
+                        charU = char.ToUpper(ch),
+                    };
+                    key.next = node;
+                    key = node;
+                    node = null;
+                }
+                else
+                {
+                    key = node.Find(ch);
+                    if (key == null)
+                    {
+                        key = new TrieNode
+                        {
+                            charL = char.ToLower(ch),
+                            charU = char.ToUpper(ch),
+                            sibl = node.sibl,
+                        };
+                        node.sibl = key;
+                    }
+                    node = key.next;
+                }
+            }
+
+            key.value = val;
         }
 
         public bool ContainsKey(string key)
@@ -77,16 +159,17 @@ namespace OneScript.Language
         public T Get(string str)
         {
             var node = _root;
+            TrieNode key = null;
             foreach (char ch in str)
             {
-                TrieNode key = node.Find(ch);
+                key = node.Find(ch);
                 if (key == null)
                     throw new KeyNotFoundException();
 
                 node = key.next;
             }
 
-            return node.value;
+            return key.value;
         }
 
         public T this[string index]
@@ -101,19 +184,25 @@ namespace OneScript.Language
         public bool TryGetValue(string str, out T value)
         {
             var node = _root;
+            TrieNode key = null;
             foreach (char ch in str)
             {
-                var key = node.Find(ch);
-                if (key == null)
+                //key = node.Find(ch);
+                while (node.charL != ch && node.charU != ch)
                 {
-                    value = default(T);
-                    return false;
+                    node = node.sibl;
+                    if (node==null)
+                    {
+                        value = default(T);
+                        return false;
+                    }
                 }
 
+                key = node;
                 node = key.next;
             }
 
-            value = node.value;
+            value = key.value;
             return true;
         }
 
