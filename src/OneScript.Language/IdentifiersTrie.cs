@@ -21,129 +21,62 @@ namespace OneScript.Language
             public TrieNode sibl;
             public TrieNode next;
 
+            public TrieNode() { }
+            public TrieNode(char ch)
+                { charL = char.ToLower(ch); charU = char.ToUpper(ch); }
+
             public TrieNode Find(char ch)
             {
-                var node = this;
-                while (node != null)
+                for(var node = this; node != null; node = node.sibl)
                 {
                     if (node.charL == ch || node.charU == ch)
                         return node;
-                    node = node.sibl;
                 }
                 return null;
             }
         }
 
-        private TrieNode _root;
+        private readonly TrieNode _root;
+        private TrieNode _first;
 
         public IdentifiersTrie()
         {
-            //_root = new TrieNode();
+            _root = new TrieNode();
         }
 
         public void Add(string str, T val)
         {
             var node = _root;
-            var key = node;
-            int i = 0;
-            for (; i < str.Length; ++i)
-            {
-                if (node == null)
-                {
-                    break;
-                }
-
-                char ch = str[i];
-                //key = node.Find(ch);
-                key = node;
-                TrieNode last=null;
-                do
-                {
-                    if (key.charL == ch || key.charU == ch)
-                        break;
-                    last = key;
-                    key = key.sibl;
-                } while (key != null);
-
-                if (key == null)
-                {
-                    key = new TrieNode
-                    {
-                        charL = char.ToLower(ch),
-                        charU = char.ToUpper(ch),
-                    };
-
-                    last.sibl = key;
-                    ++i;
-                    break;
-                }
-                else
-                {
-                    node = key.next;
-                }
-            }
-
-            if (i==0)
-            {
-                char ch = str[i];
-                _root = new TrieNode
-                {
-                    charL = char.ToLower(ch),
-                    charU = char.ToUpper(ch),
-                };
-                key = _root;
-                ++i;
-            }
-            for (; i < str.Length; ++i)
-            {
-                char ch = str[i];
-                node = new TrieNode
-                {
-                    charL = char.ToLower(ch),
-                    charU = char.ToUpper(ch),
-                };
-                key.next = node;
-                key = node;
-            }
-
-            key.value = val;
-        }
-
-        public void Add1(string str, T val)
-        {
-            var node = _root;
-            var key = node;
+            TrieNode key = node;
             foreach (char ch in str)
             {
                 if (node == null)
                 {
-                    node = new TrieNode
-                    {
-                        charL = char.ToLower(ch),
-                        charU = char.ToUpper(ch),
-                    };
+                    node = new TrieNode(ch);
                     key.next = node;
                     key = node;
-                    node = null;
                 }
                 else
                 {
-                    key = node.Find(ch);
+                    TrieNode last = node;
+                    key = node;
+                    while (key != null && key.charL != ch && key.charU != ch)
+                    {
+                        last = key;
+                        key = key.sibl;
+                    }
                     if (key == null)
                     {
-                        key = new TrieNode
-                        {
-                            charL = char.ToLower(ch),
-                            charU = char.ToUpper(ch),
-                            sibl = node.sibl,
-                        };
-                        node.sibl = key;
+                        key = new TrieNode(ch);
+                        last.sibl = key;
                     }
-                    node = key.next;
                 }
+                node = key.next;
             }
 
             key.value = val;
+
+            _first = _root.sibl;
         }
 
  
@@ -159,14 +92,16 @@ namespace OneScript.Language
 
         public T Get(string str)
         {
-            var node = _root;
+            var node = _first;
             TrieNode key = null;
             foreach (char ch in str)
             {
-                key = node.Find(ch);
-                if (key == null)
-                    throw new KeyNotFoundException();
+                while (node != null && node.charL != ch && node.charU != ch)
+                {
+                    node = node.sibl;
+                }
 
+                key = node ?? throw new KeyNotFoundException();
                 node = key.next;
             }
 
@@ -184,23 +119,19 @@ namespace OneScript.Language
 
         public bool TryGetValue(string str, out T value)
         {
-            var node = _root;
+            var node = _first;
             TrieNode key = null;
             foreach (char ch in str)
             {
-                //key = node.Find(ch);
-                while (node != null)
+                while (node != null && node.charL != ch && node.charU != ch)
                 {
-                    if (node.charL == ch || node.charU == ch)
-                        break;
                     node = node.sibl;
                 }
                 if (node == null)
                 {
-                    value = default(T);
+                    value = default;
                     return false;
                 }
-
                 key = node;
                 node = key.next;
             }
