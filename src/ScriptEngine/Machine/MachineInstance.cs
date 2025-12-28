@@ -27,9 +27,52 @@ using ScriptEngine.Machine.Debugger;
 
 namespace ScriptEngine.Machine
 {
+    public class OpStackChecked
+    {
+        private readonly List<IValue> _stack = new List<IValue>();
+        private int _size = 0;
+        public OpStackChecked() { }
+
+        public int Count => _size;
+        public IValue Pop()
+        { return _size > 0 ? _stack[--_size] : throw new RuntimeException("Stack is empty"); }
+        public IValue Peek()
+        { return _size > 0 ? _stack[_size - 1] : throw new RuntimeException("Stack is empty"); }
+        public void Drop()
+        { if (_size > 0) _size -= 1; else throw new RuntimeException("Stack is empty"); }
+        public void Push(IValue val)
+        { if (_size < _stack.Count) _stack[_size] = val; else _stack.Add(val); _size++; }
+        public IValue this[int index]
+        {
+            get => index < _size ? _stack[_size - index - 1] : throw RuntimeException.IndexOutOfRange();
+            set { if (index < _size) _stack[_size - index - 1] = value; else throw RuntimeException.IndexOutOfRange(); }
+        }
+    }
+
+    public class OpStack
+    {
+        private IValue[] _stack = new IValue[64];
+        private int _size = 0;
+        public OpStack() { }
+
+        public int Count => _size;
+        public IValue Pop() { return _stack[--_size]; }
+        public IValue Peek() { return _stack[_size - 1]; }
+        public void Drop() { _size -= 1; }
+        public void Push(IValue val)
+            { if (_size >= _stack.Length) Array.Resize(ref _stack, _size * 3 / 2); _stack[_size] = val; _size++; }
+        public IValue this[int index]
+        {
+            get => _stack[_size - index - 1];
+            set  { _stack[_size - index - 1] = value; }
+        }
+    }
+
     public class MachineInstance
     {
-        private Stack<IValue> _operationStack;
+        //OpStack _opStack = new OpStack(); 
+        //private Stack<IValue> _operationStack;
+        private OpStack _operationStack;
         private Stack<ExecutionFrame> _callStack;
         private ExecutionFrame _currentFrame;
         private Action<int>[] _commands;
@@ -346,7 +389,8 @@ namespace ScriptEngine.Machine
 
         private void Reset()
         {
-            _operationStack = new Stack<IValue>();
+            //_operationStack = new Stack<IValue>();
+            _operationStack = new OpStack();
             _callStack = new Stack<ExecutionFrame>();
             _exceptionsStack = new Stack<ExceptionJumpInfo>();
             _module = null;
@@ -757,9 +801,13 @@ namespace ScriptEngine.Machine
 
         private void Add(int arg)
         {
-            var op2 = PopRawValue();
-            var op1 = PopRawValue();
-            _operationStack.Push(ValueFactory.Add(op1, op2, _process));
+            //var op2 = PopRawValue();
+            //var op1 = PopRawValue();
+            //_operationStack.Push(ValueFactory.Add(op1, op2, _process));
+            var op2 = RawValue(_operationStack[0]);
+            var op1 = RawValue(_operationStack[1]);
+            _operationStack[1] = ValueFactory.Add(op1, op2, _process);
+            _operationStack.Drop();
             NextInstruction();
         }
 
